@@ -182,10 +182,4 @@ Open **http://localhost:5500**.
 - [python-sgp4](https://github.com/brandon-rhodes/python-sgp4)
 - [Three.js](https://threejs.org)
 
-## 👤 Author
 
-**Abhineet R** — VIT Bhopal University
-
-## 📄 License
-
-Add a license of your choice (e.g. MIT) before publishing.
