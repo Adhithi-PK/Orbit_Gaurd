@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASTRA — Space Situational Awareness</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛰️</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="statusbar">
+        <h1>ASTRA SSA</h1>
+        <div class="stat">
+            <span class="stat-label">Total Objects</span>
+            <span class="stat-value" id="stat-total">—</span>
+        </div>
+        <div class="stat">
+            <span class="stat-label">Satellites</span>
+            <span class="stat-value" id="stat-sats">—</span>
+        </div>
+        <div class="stat">
+            <span class="stat-label">Debris</span>
+            <span class="stat-value" id="stat-debris">—</span>
+        </div>
+        <span id="stat-time"></span>
+    </div>
+
+    <div id="globe-container">
+        <canvas id="globe-canvas"></canvas>
+    </div>
+
+    <div id="panel">
+
+        <div class="panel-section">
+            <div class="section-header">
+                <div class="section-dot danger"></div>
+                <h2>Conjunction Risk</h2>
+            </div>
+            <div class="table-container">
+                <table id="conjunction-table">
+                    <thead>
+                        <tr>
+                            <th>Object A</th>
+                            <th>Object B</th>
+                            <th>Miss km</th>
+                            <th>Pc</th>
+                            <th>Risk</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="section-header">
+                <div class="section-dot cyan"></div>
+                <h2>Debris Density by Altitude (LEO)</h2>
+            </div>
+            <div id="heatmap-chart"></div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initGlobe, updateSatellites, updateDebris } from './globe.js';
+        import { renderConjunctionTable, renderHeatmap, renderStatus, checkAlerts } from './charts.js';
+        import { fetchStatus, fetchSatellites, fetchDebris, fetchHeatmap, connectConjunctionSocket } from './api.js';
+
+        async function boot() {
+            initGlobe();
+
+            connectConjunctionSocket(conjunctions => {
+                renderConjunctionTable(conjunctions);
+                checkAlerts(conjunctions);
+            });
+
+            await refresh();
+            setInterval(refresh, 30000);
+        }
+
+        async function refresh() {
+            document.getElementById('stat-time').textContent =
+                'Updated ' + new Date().toUTCString();
+
+            try {
+                const [status, sats, debris, heatmap] = await Promise.allSettled([
+                    fetchStatus(),
+                    fetchSatellites(),
+                    fetchDebris(),
+                    fetchHeatmap(),
+                ]);
+
+                if (status.status === 'fulfilled') renderStatus(status.value);
+                if (sats.status === 'fulfilled') updateSatellites(sats.value);
+                if (debris.status === 'fulfilled') updateDebris(debris.value);
+                if (heatmap.status === 'fulfilled') renderHeatmap(heatmap.value);
+            } catch (err) {
+                console.error('Refresh failed:', err);
+            }
+        }
+
+        boot().catch(err => console.error('Boot failed:', err));
+    </script>
+
+</body>
+</html>
