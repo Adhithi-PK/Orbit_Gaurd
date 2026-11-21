@@ -1,0 +1,9 @@
+# requirements.txt
+fastapi
+uvicorn
+httpx
+sgp4
+scipy
+numpy
+python-dotenv
+websockets
